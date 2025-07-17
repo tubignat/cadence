@@ -307,6 +307,10 @@ const (
 	PersistenceShardRequestCountScope
 	// PersistenceGetActiveClusterSelectionPolicyScope tracks GetActiveClusterSelectionPolicy calls made by service to persistence layer
 	PersistenceGetActiveClusterSelectionPolicyScope
+	// PersistenceDeleteActiveClusterSelectionPolicyScope tracks DeleteActiveClusterSelectionPolicy calls made by service to persistence layer
+	PersistenceDeleteActiveClusterSelectionPolicyScope
+	// PersistenceSerializationScope tracks serialization and deserialization of data
+	PersistenceSerializationScope
 
 	// ResolverHostNotFoundScope is a simple low level error indicating a lookup failed in the membership resolver
 	ResolverHostNotFoundScope
@@ -1531,6 +1535,7 @@ var ScopeDefs = map[ServiceIdx]map[int]scopeDefinition{
 		PersistenceUpdateDynamicConfigScope:                      {operation: "UpdateDynamicConfig"},
 		PersistenceShardRequestCountScope:                        {operation: "ShardIdPersistenceRequest"},
 		PersistenceGetActiveClusterSelectionPolicyScope:          {operation: "GetActiveClusterSelectionPolicy"},
+		PersistenceSerializationScope:                            {operation: "SerializePersistenceBlob"},
 		ResolverHostNotFoundScope:                                {operation: "ResolverHostNotFound"},
 
 		ClusterMetadataArchivalConfigScope: {operation: "ArchivalConfig"},
@@ -2166,6 +2171,8 @@ const (
 	PersistenceErrDBUnavailableCounterPerDomain
 	PersistenceSampledCounterPerDomain
 	PersistenceEmptyResponseCounterPerDomain
+	PersistenceSerializationLatency
+	PersistenceDeserializationLatency
 
 	NoSQLShardStoreReadFromOriginalColumnCounter
 	NoSQLShardStoreReadFromDataBlobCounter
@@ -2909,6 +2916,8 @@ var MetricDefs = map[ServiceIdx]map[int]metricDefinition{
 		PersistenceErrDBUnavailableCounterPerDomain:                  {metricName: "persistence_errors_db_unavailable_per_domain", metricRollupName: "persistence_errors_db_unavailable", metricType: Counter},
 		PersistenceSampledCounterPerDomain:                           {metricName: "persistence_sampled_per_domain", metricRollupName: "persistence_sampled", metricType: Counter},
 		PersistenceEmptyResponseCounterPerDomain:                     {metricName: "persistence_empty_response_per_domain", metricRollupName: "persistence_empty_response", metricType: Counter},
+		PersistenceSerializationLatency:                              {metricName: "persistence_serialization_latency", metricType: Timer},
+		PersistenceDeserializationLatency:                            {metricName: "persistence_deserialization_latency", metricType: Timer},
 		NoSQLShardStoreReadFromOriginalColumnCounter:                 {metricName: "nosql_shard_store_read_from_original_column", metricType: Counter},
 		NoSQLShardStoreReadFromDataBlobCounter:                       {metricName: "nosql_shard_store_read_from_data_blob", metricType: Counter},
 		CadenceClientRequests:                                        {metricName: "cadence_client_requests", metricType: Counter},

@@ -26,18 +26,20 @@ import (
 	"fmt"
 
 	"github.com/uber/cadence/common/constants"
+	"github.com/uber/cadence/common/metrics"
 	"github.com/uber/cadence/common/persistence"
 )
 
 type (
 	parser struct {
-		encoder  encoder
-		decoders map[constants.EncodingType]decoder
+		metricsClient metrics.Client
+		encoder       encoder
+		decoders      map[constants.EncodingType]decoder
 	}
 )
 
 // NewParser constructs a new parser using encoder as specified by encodingType and using decoders specified by decodingTypes
-func NewParser(encodingType constants.EncodingType, decodingTypes ...constants.EncodingType) (Parser, error) {
+func NewParser(metricsClient metrics.Client, encodingType constants.EncodingType, decodingTypes ...constants.EncodingType) (Parser, error) {
 	encoder, err := getEncoder(encodingType)
 	if err != nil {
 		return nil, err
@@ -51,12 +53,18 @@ func NewParser(encodingType constants.EncodingType, decodingTypes ...constants.E
 		decoders[dt] = decoder
 	}
 	return &parser{
-		encoder:  encoder,
-		decoders: decoders,
+		encoder:       encoder,
+		decoders:      decoders,
+		metricsClient: metricsClient,
 	}, nil
 }
 
 func (p *parser) ShardInfoToBlob(info *ShardInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.shardInfoToBlob(info)
 	if err != nil {
@@ -68,6 +76,11 @@ func (p *parser) ShardInfoToBlob(info *ShardInfo) (persistence.DataBlob, error) 
 }
 
 func (p *parser) DomainInfoToBlob(info *DomainInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.domainInfoToBlob(info)
 	if err != nil {
@@ -79,6 +92,11 @@ func (p *parser) DomainInfoToBlob(info *DomainInfo) (persistence.DataBlob, error
 }
 
 func (p *parser) HistoryTreeInfoToBlob(info *HistoryTreeInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.historyTreeInfoToBlob(info)
 	if err != nil {
@@ -90,6 +108,11 @@ func (p *parser) HistoryTreeInfoToBlob(info *HistoryTreeInfo) (persistence.DataB
 }
 
 func (p *parser) WorkflowExecutionInfoToBlob(info *WorkflowExecutionInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.workflowExecutionInfoToBlob(info)
 	if err != nil {
@@ -101,6 +124,11 @@ func (p *parser) WorkflowExecutionInfoToBlob(info *WorkflowExecutionInfo) (persi
 }
 
 func (p *parser) ActivityInfoToBlob(info *ActivityInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.activityInfoToBlob(info)
 	if err != nil {
@@ -112,6 +140,11 @@ func (p *parser) ActivityInfoToBlob(info *ActivityInfo) (persistence.DataBlob, e
 }
 
 func (p *parser) ChildExecutionInfoToBlob(info *ChildExecutionInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.childExecutionInfoToBlob(info)
 	if err != nil {
@@ -123,6 +156,11 @@ func (p *parser) ChildExecutionInfoToBlob(info *ChildExecutionInfo) (persistence
 }
 
 func (p *parser) SignalInfoToBlob(info *SignalInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.signalInfoToBlob(info)
 	if err != nil {
@@ -134,6 +172,11 @@ func (p *parser) SignalInfoToBlob(info *SignalInfo) (persistence.DataBlob, error
 }
 
 func (p *parser) RequestCancelInfoToBlob(info *RequestCancelInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.requestCancelInfoToBlob(info)
 	if err != nil {
@@ -145,6 +188,11 @@ func (p *parser) RequestCancelInfoToBlob(info *RequestCancelInfo) (persistence.D
 }
 
 func (p *parser) TimerInfoToBlob(info *TimerInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.timerInfoToBlob(info)
 	if err != nil {
@@ -156,6 +204,11 @@ func (p *parser) TimerInfoToBlob(info *TimerInfo) (persistence.DataBlob, error) 
 }
 
 func (p *parser) TaskInfoToBlob(info *TaskInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.taskInfoToBlob(info)
 	if err != nil {
@@ -167,6 +220,11 @@ func (p *parser) TaskInfoToBlob(info *TaskInfo) (persistence.DataBlob, error) {
 }
 
 func (p *parser) TaskListInfoToBlob(info *TaskListInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.taskListInfoToBlob(info)
 	if err != nil {
@@ -178,6 +236,11 @@ func (p *parser) TaskListInfoToBlob(info *TaskListInfo) (persistence.DataBlob, e
 }
 
 func (p *parser) TransferTaskInfoToBlob(info *TransferTaskInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.transferTaskInfoToBlob(info)
 	if err != nil {
@@ -189,6 +252,11 @@ func (p *parser) TransferTaskInfoToBlob(info *TransferTaskInfo) (persistence.Dat
 }
 
 func (p *parser) CrossClusterTaskInfoToBlob(info *CrossClusterTaskInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.crossClusterTaskInfoToBlob(info)
 	if err != nil {
@@ -200,6 +268,11 @@ func (p *parser) CrossClusterTaskInfoToBlob(info *CrossClusterTaskInfo) (persist
 }
 
 func (p *parser) TimerTaskInfoToBlob(info *TimerTaskInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.timerTaskInfoToBlob(info)
 	if err != nil {
@@ -211,6 +284,11 @@ func (p *parser) TimerTaskInfoToBlob(info *TimerTaskInfo) (persistence.DataBlob,
 }
 
 func (p *parser) ReplicationTaskInfoToBlob(info *ReplicationTaskInfo) (persistence.DataBlob, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(string(p.encoder.encodingType()))).
+		StartTimer(metrics.PersistenceSerializationLatency)
+	defer sw.Stop()
+
 	db := persistence.DataBlob{}
 	data, err := p.encoder.replicationTaskInfoToBlob(info)
 	if err != nil {
@@ -222,6 +300,11 @@ func (p *parser) ReplicationTaskInfoToBlob(info *ReplicationTaskInfo) (persisten
 }
 
 func (p *parser) ShardInfoFromBlob(data []byte, encoding string) (*ShardInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -230,6 +313,11 @@ func (p *parser) ShardInfoFromBlob(data []byte, encoding string) (*ShardInfo, er
 }
 
 func (p *parser) DomainInfoFromBlob(data []byte, encoding string) (*DomainInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -238,6 +326,11 @@ func (p *parser) DomainInfoFromBlob(data []byte, encoding string) (*DomainInfo, 
 }
 
 func (p *parser) HistoryTreeInfoFromBlob(data []byte, encoding string) (*HistoryTreeInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -246,6 +339,11 @@ func (p *parser) HistoryTreeInfoFromBlob(data []byte, encoding string) (*History
 }
 
 func (p *parser) WorkflowExecutionInfoFromBlob(data []byte, encoding string) (*WorkflowExecutionInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -254,6 +352,11 @@ func (p *parser) WorkflowExecutionInfoFromBlob(data []byte, encoding string) (*W
 }
 
 func (p *parser) ActivityInfoFromBlob(data []byte, encoding string) (*ActivityInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -262,6 +365,11 @@ func (p *parser) ActivityInfoFromBlob(data []byte, encoding string) (*ActivityIn
 }
 
 func (p *parser) ChildExecutionInfoFromBlob(data []byte, encoding string) (*ChildExecutionInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -270,6 +378,11 @@ func (p *parser) ChildExecutionInfoFromBlob(data []byte, encoding string) (*Chil
 }
 
 func (p *parser) SignalInfoFromBlob(data []byte, encoding string) (*SignalInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -278,6 +391,11 @@ func (p *parser) SignalInfoFromBlob(data []byte, encoding string) (*SignalInfo, 
 }
 
 func (p *parser) RequestCancelInfoFromBlob(data []byte, encoding string) (*RequestCancelInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -286,6 +404,11 @@ func (p *parser) RequestCancelInfoFromBlob(data []byte, encoding string) (*Reque
 }
 
 func (p *parser) TimerInfoFromBlob(data []byte, encoding string) (*TimerInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -294,6 +417,11 @@ func (p *parser) TimerInfoFromBlob(data []byte, encoding string) (*TimerInfo, er
 }
 
 func (p *parser) TaskInfoFromBlob(data []byte, encoding string) (*TaskInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -302,6 +430,11 @@ func (p *parser) TaskInfoFromBlob(data []byte, encoding string) (*TaskInfo, erro
 }
 
 func (p *parser) TaskListInfoFromBlob(data []byte, encoding string) (*TaskListInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -310,6 +443,11 @@ func (p *parser) TaskListInfoFromBlob(data []byte, encoding string) (*TaskListIn
 }
 
 func (p *parser) TransferTaskInfoFromBlob(data []byte, encoding string) (*TransferTaskInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -318,6 +456,11 @@ func (p *parser) TransferTaskInfoFromBlob(data []byte, encoding string) (*Transf
 }
 
 func (p *parser) CrossClusterTaskInfoFromBlob(data []byte, encoding string) (*CrossClusterTaskInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -326,6 +469,11 @@ func (p *parser) CrossClusterTaskInfoFromBlob(data []byte, encoding string) (*Cr
 }
 
 func (p *parser) TimerTaskInfoFromBlob(data []byte, encoding string) (*TimerTaskInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -334,6 +482,11 @@ func (p *parser) TimerTaskInfoFromBlob(data []byte, encoding string) (*TimerTask
 }
 
 func (p *parser) ReplicationTaskInfoFromBlob(data []byte, encoding string) (*ReplicationTaskInfo, error) {
+	sw := p.metricsClient.
+		Scope(metrics.PersistenceSerializationScope, metrics.EncodingTag(encoding)).
+		StartTimer(metrics.PersistenceDeserializationLatency)
+	defer sw.Stop()
+
 	decoder, err := p.getCachedDecoder(constants.EncodingType(encoding))
 	if err != nil {
 		return nil, err
@@ -353,6 +506,8 @@ func getDecoder(encoding constants.EncodingType) (decoder, error) {
 	switch encoding {
 	case constants.EncodingTypeThriftRW:
 		return newThriftDecoder(), nil
+	case constants.EncodingTypeThriftRWSnappy:
+		return newSnappyThriftDecoder(), nil
 	default:
 		return nil, unsupportedEncodingError(encoding)
 	}
@@ -362,6 +517,8 @@ func getEncoder(encoding constants.EncodingType) (encoder, error) {
 	switch encoding {
 	case constants.EncodingTypeThriftRW:
 		return newThriftEncoder(), nil
+	case constants.EncodingTypeThriftRWSnappy:
+		return newSnappyThriftEncoder(), nil
 	default:
 		return nil, unsupportedEncodingError(encoding)
 	}

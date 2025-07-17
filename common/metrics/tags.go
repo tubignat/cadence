@@ -54,6 +54,7 @@ const (
 	transport                 = "transport"
 	caller                    = "caller"
 	service                   = "service"
+	encoding                  = "encoding"
 	destService               = "dest_service"
 	signalName                = "signalName"
 	workflowVersion           = "workflow_version"
@@ -240,6 +241,11 @@ func CallerTag(value string) Tag {
 // ServiceTag returns a new service tag.
 func ServiceTag(value string) Tag {
 	return simpleMetric{key: service, value: value}
+}
+
+// EncodingTag returns a new encoding tag.
+func EncodingTag(value string) Tag {
+	return simpleMetric{key: encoding, value: value}
 }
 
 // DestServiceTag returns a new destination service tag.
