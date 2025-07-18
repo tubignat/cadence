@@ -526,12 +526,12 @@ func (f *factoryImpl) init(clusterName string, limiters map[string]quotas.Limite
 	defaultDataStore := Datastore{ratelimit: limiters[f.config.DefaultStore]}
 	switch {
 	case defaultCfg.NoSQL != nil:
-		parser := getParser(f.logger, f.metricsClient, constants.EncodingTypeThriftRWSnappy, constants.EncodingTypeThriftRW, constants.EncodingTypeThriftRWSnappy)
+		parser := getParser(f.logger, f.metricsClient, constants.EncodingTypeThriftRWDeflate, constants.EncodingTypeThriftRW, constants.EncodingTypeThriftRWSnappy, constants.EncodingTypeThriftRWDeflate)
 		taskSerializer := serialization.NewTaskSerializer(parser)
 		shardedNoSQLConfig := defaultCfg.NoSQL.ConvertToShardedNoSQLConfig()
 		defaultDataStore.factory = nosql.NewFactory(*shardedNoSQLConfig, clusterName, f.logger, f.metricsClient, taskSerializer, parser, f.dc)
 	case defaultCfg.ShardedNoSQL != nil:
-		parser := getParser(f.logger, f.metricsClient, constants.EncodingTypeThriftRWSnappy, constants.EncodingTypeThriftRW, constants.EncodingTypeThriftRWSnappy)
+		parser := getParser(f.logger, f.metricsClient, constants.EncodingTypeThriftRWDeflate, constants.EncodingTypeThriftRW, constants.EncodingTypeThriftRWSnappy, constants.EncodingTypeThriftRWDeflate)
 		taskSerializer := serialization.NewTaskSerializer(parser)
 		defaultDataStore.factory = nosql.NewFactory(*defaultCfg.ShardedNoSQL, clusterName, f.logger, f.metricsClient, taskSerializer, parser, f.dc)
 	case defaultCfg.SQL != nil:

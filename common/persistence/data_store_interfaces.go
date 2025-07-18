@@ -967,6 +967,8 @@ func (d *DataBlob) GetEncoding() constants.EncodingType {
 		return constants.EncodingTypeThriftRW
 	case constants.EncodingTypeThriftRWSnappy:
 		return constants.EncodingTypeThriftRWSnappy
+	case constants.EncodingTypeThriftRWDeflate:
+		return constants.EncodingTypeThriftRWDeflate
 	case constants.EncodingTypeEmpty:
 		return constants.EncodingTypeEmpty
 	default:

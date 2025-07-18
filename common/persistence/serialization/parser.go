@@ -508,6 +508,8 @@ func getDecoder(encoding constants.EncodingType) (decoder, error) {
 		return newThriftDecoder(), nil
 	case constants.EncodingTypeThriftRWSnappy:
 		return newSnappyThriftDecoder(), nil
+	case constants.EncodingTypeThriftRWDeflate:
+		return newDeflateThriftDecoder(), nil
 	default:
 		return nil, unsupportedEncodingError(encoding)
 	}
@@ -519,6 +521,8 @@ func getEncoder(encoding constants.EncodingType) (encoder, error) {
 		return newThriftEncoder(), nil
 	case constants.EncodingTypeThriftRWSnappy:
 		return newSnappyThriftEncoder(), nil
+	case constants.EncodingTypeThriftRWDeflate:
+		return newDeflateThriftEncoder(), nil
 	default:
 		return nil, unsupportedEncodingError(encoding)
 	}

@@ -60,13 +60,14 @@ const (
 
 // Data encoding types
 const (
-	EncodingTypeJSON           EncodingType = "json"
-	EncodingTypeThriftRW       EncodingType = "thriftrw"
-	EncodingTypeThriftRWSnappy EncodingType = "thriftrw_snappy"
-	EncodingTypeGob            EncodingType = "gob"
-	EncodingTypeUnknown        EncodingType = "unknow"
-	EncodingTypeEmpty          EncodingType = ""
-	EncodingTypeProto          EncodingType = "proto3"
+	EncodingTypeJSON            EncodingType = "json"
+	EncodingTypeThriftRW        EncodingType = "thriftrw"
+	EncodingTypeThriftRWSnappy  EncodingType = "thriftrw_snappy"
+	EncodingTypeThriftRWDeflate EncodingType = "thriftrw_deflate"
+	EncodingTypeGob             EncodingType = "gob"
+	EncodingTypeUnknown         EncodingType = "unknow"
+	EncodingTypeEmpty           EncodingType = ""
+	EncodingTypeProto           EncodingType = "proto3"
 )
 
 type (
