@@ -35,6 +35,10 @@ type (
 		VersionHistories *persistence.VersionHistories
 		Activities       map[int64]*persistence.ActivityInfo
 		History          events.PersistedBlobs
-		PersistenceError bool
+		PersistenceError error
+
+		// if true, the task will be scheduled in memory for the current execution, otherwise
+		// it will only be scheduled after the next DB scan
+		ScheduleInMemory bool
 	}
 )

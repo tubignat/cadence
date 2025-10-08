@@ -67,6 +67,8 @@ type (
 		SplitSlices(func(VirtualSlice) (remaining []VirtualSlice, split bool))
 		// Pause pauses the virtual queue for a while
 		Pause(time.Duration)
+		// ScheduleSingleTask schedules a single task to the virtual queue
+		ScheduleSingleTask(task task.Task)
 	}
 
 	VirtualQueueOptions struct {
@@ -394,34 +396,13 @@ func (q *virtualQueueImpl) loadAndSubmitTasks() {
 
 	now := q.timeSource.Now()
 	for _, task := range tasks {
-		if persistence.IsTaskCorrupted(task) {
-			q.logger.Error("Virtual queue encountered a corrupted task", tag.Dynamic("task", task))
-			q.metricsScope.IncCounter(metrics.CorruptedHistoryTaskCounter)
-			task.Ack()
-			continue
-		}
-
-		scheduledTime := task.GetTaskKey().GetScheduledTime()
-		// if the scheduled time is in the future, we need to reschedule the task
-		if now.Before(scheduledTime) {
-			q.rescheduler.RescheduleTask(task, scheduledTime)
-			continue
-		}
-		// shard level metrics for the duration between a task being written to a queue and being fetched from it
-		q.metricsScope.RecordHistogramDuration(metrics.TaskEnqueueToFetchLatency, now.Sub(task.GetVisibilityTimestamp()))
-		task.SetInitialSubmitTime(now)
-		submitted, err := q.processor.TrySubmit(task)
-		if err != nil {
+		if err := q.submitTask(now, task); err != nil {
 			select {
 			case <-q.ctx.Done():
 				return
 			default:
 				q.logger.Error("Virtual queue failed to submit task", tag.Error(err))
 			}
-		}
-		if !submitted {
-			q.metricsScope.IncCounter(metrics.ProcessingQueueThrottledCounter)
-			q.rescheduler.RescheduleTask(task, q.timeSource.Now().Add(taskSchedulerThrottleBackoffInterval))
 		}
 	}
 
@@ -434,6 +415,45 @@ func (q *virtualQueueImpl) loadAndSubmitTasks() {
 	if q.sliceToRead != nil {
 		q.notify()
 	}
+}
+
+func (q *virtualQueueImpl) ScheduleSingleTask(task task.Task) {
+	q.Lock()
+	defer q.Unlock()
+	now := q.timeSource.Now()
+	if err := q.submitTask(now, task); err != nil {
+		q.logger.Error("Virtual queue failed to submit task", tag.Error(err))
+	}
+}
+
+func (q *virtualQueueImpl) submitTask(now time.Time, task task.Task) error {
+	if persistence.IsTaskCorrupted(task) {
+		q.logger.Error("Virtual queue encountered a corrupted task", tag.Dynamic("task", task))
+		q.metricsScope.IncCounter(metrics.CorruptedHistoryTaskCounter)
+		task.Ack()
+		return nil
+	}
+
+	scheduledTime := task.GetTaskKey().GetScheduledTime()
+	// if the scheduled time is in the future, we need to reschedule the task
+	if now.Before(scheduledTime) {
+		q.rescheduler.RescheduleTask(task, scheduledTime)
+		return nil
+	}
+	// shard level metrics for the duration between a task being written to a queue and being fetched from it
+	q.metricsScope.RecordHistogramDuration(metrics.TaskEnqueueToFetchLatency, now.Sub(task.GetVisibilityTimestamp()))
+	task.SetInitialSubmitTime(now)
+	submitted, err := q.processor.TrySubmit(task)
+	if err != nil {
+		return err
+	}
+
+	if !submitted {
+		q.metricsScope.IncCounter(metrics.ProcessingQueueThrottledCounter)
+		q.rescheduler.RescheduleTask(task, q.timeSource.Now().Add(taskSchedulerThrottleBackoffInterval))
+	}
+
+	return nil
 }
 
 func (q *virtualQueueImpl) resetNextReadSliceLocked() {

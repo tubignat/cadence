@@ -56,6 +56,7 @@ type (
 		// Add a new virtual slice to the root queue. This is used when new tasks are generated and max read level is updated.
 		// By default, all new tasks belong to the root queue, so we need to add a new virtual slice to the root queue.
 		AddNewVirtualSliceToRootQueue(VirtualSlice)
+		AddSingleTaskToRootQueue(task.Task)
 	}
 
 	virtualQueueManagerImpl struct {
@@ -216,6 +217,16 @@ func (m *virtualQueueManagerImpl) AddNewVirtualSliceToRootQueue(s VirtualSlice) 
 
 	m.virtualQueues[rootQueueID] = m.createVirtualQueueFn(rootQueueID, s)
 	m.virtualQueues[rootQueueID].Start()
+}
+
+func (m *virtualQueueManagerImpl) AddSingleTaskToRootQueue(t task.Task) {
+	m.RLock()
+	defer m.RUnlock()
+	if vq, ok := m.virtualQueues[rootQueueID]; ok {
+		vq.ScheduleSingleTask(t)
+	}
+
+	// if a root queue is not created yet, no need to schedule an incoming task, it will be read from the slice
 }
 
 func (m *virtualQueueManagerImpl) appendOrMergeSlice(vq VirtualQueue, s VirtualSlice) {

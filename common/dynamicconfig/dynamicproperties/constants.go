@@ -2113,6 +2113,7 @@ const (
 	EnableTimerQueueV2
 	EnableTransferQueueV2PendingTaskCountAlert
 	EnableTimerQueueV2PendingTaskCountAlert
+	TimerProcessorInMemoryQueue
 
 	// LastBoolKey must be the last one in this const group
 	LastBoolKey
@@ -4666,7 +4667,7 @@ var BoolKeys = map[BoolKey]DynamicBool{
 		KeyName:      "history.enableTimerQueueV2",
 		Description:  "EnableTimerQueueV2 is to enable timer queue v2",
 		Filters:      []Filter{ShardID},
-		DefaultValue: false,
+		DefaultValue: true,
 	},
 	EnableTransferQueueV2PendingTaskCountAlert: {
 		KeyName:      "history.enableTransferQueueV2PendingTaskCountAlert",
@@ -4679,6 +4680,12 @@ var BoolKeys = map[BoolKey]DynamicBool{
 		Description:  "EnableTimerQueueV2PendingTaskCountAlert is to enable timer queue v2 pending task count alert",
 		Filters:      []Filter{ShardID},
 		DefaultValue: false,
+	},
+	TimerProcessorInMemoryQueue: {
+		KeyName:      "history.timerProcessorInMemoryQueue",
+		Description:  "TimerProcessorInMemoryQueue is the flag to enable in-memory queue for timer processor",
+		Filters:      []Filter{ShardID},
+		DefaultValue: true,
 	},
 }
 
@@ -5196,7 +5203,7 @@ var DurationKeys = map[DurationKey]DynamicDuration{
 	TimerProcessorMaxTimeShift: {
 		KeyName:      "history.timerProcessorMaxTimeShift",
 		Description:  "TimerProcessorMaxTimeShift is the max shift timer processor can have",
-		DefaultValue: time.Second,
+		DefaultValue: 30 * time.Second,
 	},
 	TransferProcessorFailoverMaxStartJitterInterval: {
 		KeyName:      "history.transferProcessorFailoverMaxStartJitterInterval",

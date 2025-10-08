@@ -109,7 +109,7 @@ func (v *transferQueueValidator) addTasks(info *hcommon.NotifyTaskInfo) {
 	for _, task := range info.Tasks[:numTaskToAdd] {
 		// It is possible that a task is acked before it is added to the validator
 		// In that case, the lost task could be a potential false positive case
-		potentialFalsePositive := info.PersistenceError || task.GetTaskID() <= v.minReadTaskID
+		potentialFalsePositive := info.PersistenceError != nil || task.GetTaskID() <= v.minReadTaskID
 		v.pendingTaskInfos[task.GetTaskID()] = pendingTaskInfo{
 			executionInfo:          info.ExecutionInfo,
 			task:                   task,

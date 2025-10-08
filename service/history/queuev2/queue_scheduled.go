@@ -143,15 +143,40 @@ func (q *scheduledQueue) NotifyNewTask(clusterName string, info *hcommon.NotifyT
 		return
 	}
 
-	nextTime := info.Tasks[0].GetVisibilityTimestamp()
-	for i := 1; i < numTasks; i++ {
-		ts := info.Tasks[i].GetVisibilityTimestamp()
-		if ts.Before(nextTime) {
-			nextTime = ts
+	readLevel := q.base.newVirtualSliceState.Range.InclusiveMinTaskKey.GetScheduledTime()
+
+	q.base.logger.Debug(
+		"New timer task notification received",
+		tag.Dynamic("numTasks", numTasks),
+		tag.Dynamic("scheduleInMemory", info.ScheduleInMemory),
+		tag.Dynamic("persistenceError", info.PersistenceError),
+		tag.Dynamic("readLevel", readLevel),
+		tag.Dynamic("shardId", q.base.shard.GetShardID()),
+	)
+
+	var minNextTime time.Time
+	for _, task := range info.Tasks {
+		ts := task.GetVisibilityTimestamp()
+		if ts.Before(readLevel) && info.ScheduleInMemory {
+			// todo: clean up cache on unknown error
+			if info.PersistenceError != nil {
+				q.base.logger.Debug("Skipping task due to persistence error", tag.Dynamic("persistenceError", info.PersistenceError))
+				continue
+			}
+
+			q.base.logger.Debug("Submitting task to in memory queue", tag.Dynamic("scheduledTime", ts), tag.Dynamic("shardId", q.base.shard.GetShardID()))
+			q.base.processSingleTask(q.base.taskInitializer(task))
+		} else {
+			if minNextTime.IsZero() || ts.Before(minNextTime) {
+				minNextTime = ts
+			}
 		}
 	}
 
-	q.notify(nextTime)
+	if !minNextTime.IsZero() {
+		q.notify(minNextTime)
+	}
+
 	q.base.metricsScope.AddCounter(metrics.NewHistoryTaskCounter, int64(numTasks))
 }
 

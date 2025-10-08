@@ -13,6 +13,8 @@ import (
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
+
+	task "github.com/uber/cadence/service/history/task"
 )
 
 // MockVirtualQueueManager is a mock of VirtualQueueManager interface.
@@ -49,6 +51,18 @@ func (m *MockVirtualQueueManager) AddNewVirtualSliceToRootQueue(arg0 VirtualSlic
 func (mr *MockVirtualQueueManagerMockRecorder) AddNewVirtualSliceToRootQueue(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewVirtualSliceToRootQueue", reflect.TypeOf((*MockVirtualQueueManager)(nil).AddNewVirtualSliceToRootQueue), arg0)
+}
+
+// AddSingleTaskToRootQueue mocks base method.
+func (m *MockVirtualQueueManager) AddSingleTaskToRootQueue(arg0 task.Task) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AddSingleTaskToRootQueue", arg0)
+}
+
+// AddSingleTaskToRootQueue indicates an expected call of AddSingleTaskToRootQueue.
+func (mr *MockVirtualQueueManagerMockRecorder) AddSingleTaskToRootQueue(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSingleTaskToRootQueue", reflect.TypeOf((*MockVirtualQueueManager)(nil).AddSingleTaskToRootQueue), arg0)
 }
 
 // GetOrCreateVirtualQueue mocks base method.

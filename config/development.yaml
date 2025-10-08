@@ -173,3 +173,6 @@ shardDistribution:
   process:
     period: 1s
     heartbeatTTL: 2s
+
+log:
+  level: debug

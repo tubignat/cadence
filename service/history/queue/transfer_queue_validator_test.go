@@ -118,7 +118,7 @@ func (s *transferQueueValidatorSuite) TestAddTasks_NoTaskDropped() {
 	}
 	expectedPendingTasksLen := len(tasks)
 
-	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: false})
+	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: nil})
 	s.Len(s.validator.pendingTaskInfos, expectedPendingTasksLen)
 
 	tasks = []persistence.Task{
@@ -127,7 +127,7 @@ func (s *transferQueueValidatorSuite) TestAddTasks_NoTaskDropped() {
 	}
 	expectedPendingTasksLen += len(tasks)
 
-	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: false})
+	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: nil})
 	s.Len(s.validator.pendingTaskInfos, expectedPendingTasksLen)
 }
 
@@ -140,7 +140,7 @@ func (s *transferQueueValidatorSuite) TestAddTasks_TaskDropped() {
 	}
 	expectedPendingTasksLen := len(tasks)
 
-	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: false})
+	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: nil})
 	s.Len(s.validator.pendingTaskInfos, expectedPendingTasksLen)
 
 	tasks = []persistence.Task{}
@@ -152,7 +152,7 @@ func (s *transferQueueValidatorSuite) TestAddTasks_TaskDropped() {
 	s.mockLogger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 	s.mockMetricScope.On("AddCounter", metrics.QueueValidatorDropTaskCounter, int64(numDroppedTasks)).Times(1)
 
-	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: false})
+	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: tasks, PersistenceError: nil})
 	s.Len(s.validator.pendingTaskInfos, defaultMaxPendingTasksSize)
 }
 
@@ -164,7 +164,7 @@ func (s *transferQueueValidatorSuite) TestAckTasks_NoTaskLost() {
 		&persistence.DecisionTask{TaskData: persistence.TaskData{TaskID: 2}},
 		&persistence.DecisionTask{TaskData: persistence.TaskData{TaskID: 100}},
 	}
-	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: pendingTasks, PersistenceError: false})
+	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: pendingTasks, PersistenceError: nil})
 
 	loadedTasks := make(map[task.Key]task.Task, len(pendingTasks))
 	for _, pendingTask := range pendingTasks[:len(pendingTasks)-1] {
@@ -197,7 +197,7 @@ func (s *transferQueueValidatorSuite) TestAckTasks_TaskLost() {
 		&persistence.DecisionTask{TaskData: persistence.TaskData{TaskID: 1}},
 		&persistence.DecisionTask{TaskData: persistence.TaskData{TaskID: 2}},
 	}
-	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: pendingTasks, PersistenceError: false})
+	s.validator.addTasks(&hcommon.NotifyTaskInfo{ExecutionInfo: executionInfo, Tasks: pendingTasks, PersistenceError: nil})
 
 	loadedTasks := make(map[task.Key]task.Task, len(pendingTasks))
 	for _, pendingTask := range pendingTasks[1:] {

@@ -14,6 +14,8 @@ import (
 	time "time"
 
 	gomock "go.uber.org/mock/gomock"
+
+	task "github.com/uber/cadence/service/history/task"
 )
 
 // MockVirtualQueue is a mock of VirtualQueue interface.
@@ -132,6 +134,18 @@ func (m *MockVirtualQueue) Pause(arg0 time.Duration) {
 func (mr *MockVirtualQueueMockRecorder) Pause(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Pause", reflect.TypeOf((*MockVirtualQueue)(nil).Pause), arg0)
+}
+
+// ScheduleSingleTask mocks base method.
+func (m *MockVirtualQueue) ScheduleSingleTask(task task.Task) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ScheduleSingleTask", task)
+}
+
+// ScheduleSingleTask indicates an expected call of ScheduleSingleTask.
+func (mr *MockVirtualQueueMockRecorder) ScheduleSingleTask(task any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleSingleTask", reflect.TypeOf((*MockVirtualQueue)(nil).ScheduleSingleTask), task)
 }
 
 // SplitSlices mocks base method.

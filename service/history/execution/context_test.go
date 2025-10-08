@@ -215,7 +215,7 @@ func TestNotifyTasksFromWorkflowSnapshot(t *testing.T) {
 		name             string
 		workflowSnapShot *persistence.WorkflowSnapshot
 		history          events.PersistedBlobs
-		persistenceError bool
+		persistenceError error
 		mockSetup        func(*engine.MockEngine)
 	}{
 		{
@@ -262,7 +262,7 @@ func TestNotifyTasksFromWorkflowSnapshot(t *testing.T) {
 			history: events.PersistedBlobs{
 				events.PersistedBlob{},
 			},
-			persistenceError: true,
+			persistenceError: assert.AnError,
 			mockSetup: func(mockEngine *engine.MockEngine) {
 				mockEngine.EXPECT().NotifyNewTransferTasks(&hcommon.NotifyTaskInfo{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
@@ -275,7 +275,7 @@ func TestNotifyTasksFromWorkflowSnapshot(t *testing.T) {
 							TaskList: "test-tl",
 						},
 					},
-					PersistenceError: true,
+					PersistenceError: assert.AnError,
 				})
 				mockEngine.EXPECT().NotifyNewTimerTasks(&hcommon.NotifyTaskInfo{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
@@ -288,7 +288,8 @@ func TestNotifyTasksFromWorkflowSnapshot(t *testing.T) {
 							Attempt: 10,
 						},
 					},
-					PersistenceError: true,
+					PersistenceError: assert.AnError,
+					ScheduleInMemory: true,
 				})
 				mockEngine.EXPECT().NotifyNewReplicationTasks(&hcommon.NotifyTaskInfo{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
@@ -319,7 +320,7 @@ func TestNotifyTasksFromWorkflowSnapshot(t *testing.T) {
 					History: events.PersistedBlobs{
 						events.PersistedBlob{},
 					},
-					PersistenceError: true,
+					PersistenceError: assert.AnError,
 				})
 			},
 		},
@@ -345,7 +346,7 @@ func TestNotifyTasksFromWorkflowMutation(t *testing.T) {
 		name             string
 		workflowMutation *persistence.WorkflowMutation
 		history          events.PersistedBlobs
-		persistenceError bool
+		persistenceError error
 		mockSetup        func(*engine.MockEngine)
 	}{
 		{
@@ -392,7 +393,7 @@ func TestNotifyTasksFromWorkflowMutation(t *testing.T) {
 			history: events.PersistedBlobs{
 				events.PersistedBlob{},
 			},
-			persistenceError: true,
+			persistenceError: assert.AnError,
 			mockSetup: func(mockEngine *engine.MockEngine) {
 				mockEngine.EXPECT().NotifyNewTransferTasks(&hcommon.NotifyTaskInfo{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
@@ -405,7 +406,7 @@ func TestNotifyTasksFromWorkflowMutation(t *testing.T) {
 							TaskList: "test-tl",
 						},
 					},
-					PersistenceError: true,
+					PersistenceError: assert.AnError,
 				})
 				mockEngine.EXPECT().NotifyNewTimerTasks(&hcommon.NotifyTaskInfo{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
@@ -418,7 +419,8 @@ func TestNotifyTasksFromWorkflowMutation(t *testing.T) {
 							Attempt: 10,
 						},
 					},
-					PersistenceError: true,
+					PersistenceError: assert.AnError,
+					ScheduleInMemory: true,
 				})
 				mockEngine.EXPECT().NotifyNewReplicationTasks(&hcommon.NotifyTaskInfo{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
@@ -449,7 +451,7 @@ func TestNotifyTasksFromWorkflowMutation(t *testing.T) {
 					History: events.PersistedBlobs{
 						events.PersistedBlob{},
 					},
-					PersistenceError: true,
+					PersistenceError: assert.AnError,
 				})
 			},
 		},
@@ -1065,7 +1067,7 @@ func TestCreateWorkflowExecution(t *testing.T) {
 		prevLastWriteVersion                  int64
 		createWorkflowRequestMode             persistence.CreateWorkflowRequestMode
 		mockCreateWorkflowExecutionFn         func(context.Context, *persistence.CreateWorkflowExecutionRequest) (*persistence.CreateWorkflowExecutionResponse, error)
-		mockNotifyTasksFromWorkflowSnapshotFn func(*persistence.WorkflowSnapshot, events.PersistedBlobs, bool)
+		mockNotifyTasksFromWorkflowSnapshotFn func(*persistence.WorkflowSnapshot, events.PersistedBlobs, error)
 		mockEmitSessionUpdateStatsFn          func(string, *persistence.MutableStateUpdateSessionStats)
 		wantErr                               bool
 	}{
@@ -1092,8 +1094,8 @@ func TestCreateWorkflowExecution(t *testing.T) {
 			mockCreateWorkflowExecutionFn: func(context.Context, *persistence.CreateWorkflowExecutionRequest) (*persistence.CreateWorkflowExecutionResponse, error) {
 				return nil, &types.InternalServiceError{}
 			},
-			mockNotifyTasksFromWorkflowSnapshotFn: func(_ *persistence.WorkflowSnapshot, _ events.PersistedBlobs, persistenceError bool) {
-				assert.Equal(t, true, persistenceError)
+			mockNotifyTasksFromWorkflowSnapshotFn: func(_ *persistence.WorkflowSnapshot, _ events.PersistedBlobs, persistenceError error) {
+				assert.Error(t, persistenceError)
 			},
 			wantErr: true,
 		},
@@ -1164,7 +1166,7 @@ func TestCreateWorkflowExecution(t *testing.T) {
 					},
 				}, nil
 			},
-			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, history events.PersistedBlobs, persistenceError bool) {
+			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, history events.PersistedBlobs, persistenceError error) {
 				assert.Equal(t, &persistence.WorkflowSnapshot{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
 						DomainID:   "test-domain-id",
@@ -1181,7 +1183,7 @@ func TestCreateWorkflowExecution(t *testing.T) {
 						FirstEventID: 1,
 					},
 				}, history)
-				assert.Equal(t, false, persistenceError)
+				assert.NoError(t, persistenceError)
 			},
 			mockEmitSessionUpdateStatsFn: func(domainName string, stats *persistence.MutableStateUpdateSessionStats) {
 				assert.Equal(t, "test-domain", domainName)
@@ -1233,7 +1235,7 @@ func TestUpdateWorkflowExecutionTasks(t *testing.T) {
 		name                                  string
 		mockSetup                             func(*shard.MockContext, *cache.MockDomainCache, *MockMutableState)
 		mockUpdateWorkflowExecutionFn         func(context.Context, *persistence.UpdateWorkflowExecutionRequest) (*persistence.UpdateWorkflowExecutionResponse, error)
-		mockNotifyTasksFromWorkflowMutationFn func(*persistence.WorkflowMutation, events.PersistedBlobs, bool)
+		mockNotifyTasksFromWorkflowMutationFn func(*persistence.WorkflowMutation, events.PersistedBlobs, error)
 		mockEmitSessionUpdateStatsFn          func(string, *persistence.MutableStateUpdateSessionStats)
 		wantErr                               bool
 		assertErr                             func(*testing.T, error)
@@ -1297,8 +1299,8 @@ func TestUpdateWorkflowExecutionTasks(t *testing.T) {
 			mockUpdateWorkflowExecutionFn: func(_ context.Context, request *persistence.UpdateWorkflowExecutionRequest) (*persistence.UpdateWorkflowExecutionResponse, error) {
 				return nil, &types.InternalServiceError{}
 			},
-			mockNotifyTasksFromWorkflowMutationFn: func(_ *persistence.WorkflowMutation, _ events.PersistedBlobs, persistenceError bool) {
-				assert.Equal(t, true, persistenceError, "case: update workflow failed with possibly success error")
+			mockNotifyTasksFromWorkflowMutationFn: func(_ *persistence.WorkflowMutation, _ events.PersistedBlobs, persistenceError error) {
+				assert.Error(t, persistenceError, "case: update workflow failed with possibly success error")
 			},
 			wantErr: true,
 			assertErr: func(t *testing.T, err error) {
@@ -1337,7 +1339,7 @@ func TestUpdateWorkflowExecutionTasks(t *testing.T) {
 					},
 				}, nil
 			},
-			mockNotifyTasksFromWorkflowMutationFn: func(mutation *persistence.WorkflowMutation, history events.PersistedBlobs, persistenceError bool) {
+			mockNotifyTasksFromWorkflowMutationFn: func(mutation *persistence.WorkflowMutation, history events.PersistedBlobs, persistenceError error) {
 				assert.Equal(t, &persistence.WorkflowMutation{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
 						DomainID:   "test-domain-id",
@@ -1347,7 +1349,7 @@ func TestUpdateWorkflowExecutionTasks(t *testing.T) {
 					ExecutionStats: &persistence.ExecutionStats{},
 				}, mutation, "case: success")
 				assert.Nil(t, history, "case: success")
-				assert.Equal(t, false, persistenceError, "case: success")
+				assert.NoError(t, persistenceError, "case: success")
 			},
 			mockEmitSessionUpdateStatsFn: func(domainName string, stats *persistence.MutableStateUpdateSessionStats) {
 				assert.Equal(t, "test-domain", domainName, "case: success")
@@ -1409,8 +1411,8 @@ func TestUpdateWorkflowExecutionWithNew(t *testing.T) {
 		mockPersistNonStartWorkflowBatchEventsFn  func(context.Context, *persistence.WorkflowEvents) (events.PersistedBlob, error)
 		mockPersistStartWorkflowBatchEventsFn     func(context.Context, *persistence.WorkflowEvents) (events.PersistedBlob, error)
 		mockUpdateWorkflowExecutionFn             func(context.Context, *persistence.UpdateWorkflowExecutionRequest) (*persistence.UpdateWorkflowExecutionResponse, error)
-		mockNotifyTasksFromWorkflowMutationFn     func(*persistence.WorkflowMutation, events.PersistedBlobs, bool)
-		mockNotifyTasksFromWorkflowSnapshotFn     func(*persistence.WorkflowSnapshot, events.PersistedBlobs, bool)
+		mockNotifyTasksFromWorkflowMutationFn     func(*persistence.WorkflowMutation, events.PersistedBlobs, error)
+		mockNotifyTasksFromWorkflowSnapshotFn     func(*persistence.WorkflowSnapshot, events.PersistedBlobs, error)
 		mockEmitSessionUpdateStatsFn              func(string, *persistence.MutableStateUpdateSessionStats)
 		mockEmitWorkflowHistoryStatsFn            func(string, int, int)
 		mockEmitLargeWorkflowShardIDStatsFn       func(int64, int64, int64, int64)
@@ -1687,11 +1689,11 @@ func TestUpdateWorkflowExecutionWithNew(t *testing.T) {
 			mockUpdateWorkflowExecutionFn: func(context.Context, *persistence.UpdateWorkflowExecutionRequest) (*persistence.UpdateWorkflowExecutionResponse, error) {
 				return nil, errors.New("some error")
 			},
-			mockNotifyTasksFromWorkflowMutationFn: func(_ *persistence.WorkflowMutation, _ events.PersistedBlobs, persistenceError bool) {
-				assert.Equal(t, true, persistenceError, "case: updateWorkflowExecution failed")
+			mockNotifyTasksFromWorkflowMutationFn: func(_ *persistence.WorkflowMutation, _ events.PersistedBlobs, persistenceError error) {
+				assert.Error(t, persistenceError, "case: updateWorkflowExecution failed")
 			},
-			mockNotifyTasksFromWorkflowSnapshotFn: func(_ *persistence.WorkflowSnapshot, _ events.PersistedBlobs, persistenceError bool) {
-				assert.Equal(t, true, persistenceError, "case: updateWorkflowExecution failed")
+			mockNotifyTasksFromWorkflowSnapshotFn: func(_ *persistence.WorkflowSnapshot, _ events.PersistedBlobs, persistenceError error) {
+				assert.Error(t, persistenceError, "case: updateWorkflowExecution failed")
 			},
 			wantErr: true,
 			assertErr: func(t *testing.T, err error) {
@@ -1884,7 +1886,7 @@ func TestUpdateWorkflowExecutionWithNew(t *testing.T) {
 					},
 				}, nil
 			},
-			mockNotifyTasksFromWorkflowMutationFn: func(currentWorkflow *persistence.WorkflowMutation, currentEvents events.PersistedBlobs, persistenceError bool) {
+			mockNotifyTasksFromWorkflowMutationFn: func(currentWorkflow *persistence.WorkflowMutation, currentEvents events.PersistedBlobs, persistenceError error) {
 				assert.Equal(t, &persistence.WorkflowMutation{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
 						DomainID:   "test-domain-id",
@@ -1908,9 +1910,9 @@ func TestUpdateWorkflowExecutionWithNew(t *testing.T) {
 						},
 					},
 				}, currentEvents, "case: success")
-				assert.Equal(t, false, persistenceError)
+				assert.NoError(t, persistenceError)
 			},
-			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, newEvents events.PersistedBlobs, persistenceError bool) {
+			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, newEvents events.PersistedBlobs, persistenceError error) {
 				assert.Equal(t, &persistence.WorkflowSnapshot{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
 						DomainID:   "test-domain-id",
@@ -1933,7 +1935,7 @@ func TestUpdateWorkflowExecutionWithNew(t *testing.T) {
 						},
 					},
 				}, newEvents, "case: success")
-				assert.Equal(t, false, persistenceError, "case: success")
+				assert.NoError(t, persistenceError, "case: success")
 			},
 			mockEmitWorkflowHistoryStatsFn: func(domainName string, size int, count int) {
 				assert.Equal(t, 5, size, "case: success")
@@ -2011,8 +2013,8 @@ func TestConflictResolveWorkflowExecution(t *testing.T) {
 		mockPersistNonStartWorkflowBatchEventsFn           func(context.Context, *persistence.WorkflowEvents) (events.PersistedBlob, error)
 		mockPersistStartWorkflowBatchEventsFn              func(context.Context, *persistence.WorkflowEvents) (events.PersistedBlob, error)
 		mockUpdateWorkflowExecutionFn                      func(context.Context, *persistence.UpdateWorkflowExecutionRequest) (*persistence.UpdateWorkflowExecutionResponse, error)
-		mockNotifyTasksFromWorkflowMutationFn              func(*persistence.WorkflowMutation, events.PersistedBlobs, bool)
-		mockNotifyTasksFromWorkflowSnapshotFn              func(*persistence.WorkflowSnapshot, events.PersistedBlobs, bool)
+		mockNotifyTasksFromWorkflowMutationFn              func(*persistence.WorkflowMutation, events.PersistedBlobs, error)
+		mockNotifyTasksFromWorkflowSnapshotFn              func(*persistence.WorkflowSnapshot, events.PersistedBlobs, error)
 		mockEmitSessionUpdateStatsFn                       func(string, *persistence.MutableStateUpdateSessionStats)
 		mockEmitWorkflowHistoryStatsFn                     func(string, int, int)
 		mockEmitLargeWorkflowShardIDStatsFn                func(int64, int64, int64, int64)
@@ -2473,11 +2475,11 @@ func TestConflictResolveWorkflowExecution(t *testing.T) {
 			mockConflictResolveWorkflowExecutionEventReapplyFn: func(persistence.ConflictResolveWorkflowMode, []*persistence.WorkflowEvents, []*persistence.WorkflowEvents) error {
 				return nil
 			},
-			mockNotifyTasksFromWorkflowMutationFn: func(currentWorkflow *persistence.WorkflowMutation, currentEvents events.PersistedBlobs, persistenceError bool) {
-				assert.Equal(t, true, persistenceError, "case: ConflictResolveWorkflowExecution failed")
+			mockNotifyTasksFromWorkflowMutationFn: func(currentWorkflow *persistence.WorkflowMutation, currentEvents events.PersistedBlobs, persistenceError error) {
+				assert.Error(t, persistenceError, "case: ConflictResolveWorkflowExecution failed")
 			},
-			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, newEvents events.PersistedBlobs, persistenceError bool) {
-				assert.Equal(t, true, persistenceError, "case: ConflictResolveWorkflowExecution failed")
+			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, newEvents events.PersistedBlobs, persistenceError error) {
+				assert.Error(t, persistenceError, "case: ConflictResolveWorkflowExecution failed")
 			},
 			wantErr: true,
 			assertErr: func(t *testing.T, err error) {
@@ -2648,7 +2650,7 @@ func TestConflictResolveWorkflowExecution(t *testing.T) {
 				}, newEvents, "case: success")
 				return nil
 			},
-			mockNotifyTasksFromWorkflowMutationFn: func(currentWorkflow *persistence.WorkflowMutation, currentEvents events.PersistedBlobs, persistenceError bool) {
+			mockNotifyTasksFromWorkflowMutationFn: func(currentWorkflow *persistence.WorkflowMutation, currentEvents events.PersistedBlobs, persistenceError error) {
 				assert.Equal(t, &persistence.WorkflowMutation{
 					ExecutionInfo: &persistence.WorkflowExecutionInfo{
 						DomainID:   "test-domain-id",
@@ -2676,9 +2678,9 @@ func TestConflictResolveWorkflowExecution(t *testing.T) {
 						},
 					},
 				}, currentEvents, "case: success")
-				assert.Equal(t, false, persistenceError, "case: success")
+				assert.NoError(t, persistenceError, "case: success")
 			},
-			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, newEvents events.PersistedBlobs, persistenceError bool) {
+			mockNotifyTasksFromWorkflowSnapshotFn: func(newWorkflow *persistence.WorkflowSnapshot, newEvents events.PersistedBlobs, persistenceError error) {
 				if newWorkflow.ExecutionInfo.RunID == "test-run-id" {
 					assert.Equal(t, &persistence.WorkflowSnapshot{
 						ExecutionInfo: &persistence.WorkflowExecutionInfo{
@@ -2720,7 +2722,7 @@ func TestConflictResolveWorkflowExecution(t *testing.T) {
 						},
 					},
 				}, newEvents, "case: success")
-				assert.Equal(t, false, persistenceError, "case: success")
+				assert.NoError(t, persistenceError, "case: success")
 			},
 			mockEmitWorkflowHistoryStatsFn: func(domainName string, size int, count int) {
 				assert.Equal(t, 5, size, "case: success")

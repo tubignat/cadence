@@ -193,8 +193,8 @@ type (
 		createWorkflowExecutionFn             func(context.Context, *persistence.CreateWorkflowExecutionRequest) (*persistence.CreateWorkflowExecutionResponse, error)
 		updateWorkflowExecutionFn             func(context.Context, *persistence.UpdateWorkflowExecutionRequest) (*persistence.UpdateWorkflowExecutionResponse, error)
 		updateWorkflowExecutionWithNewFn      func(context.Context, time.Time, persistence.UpdateWorkflowMode, Context, MutableState, TransactionPolicy, *TransactionPolicy, persistence.CreateWorkflowRequestMode) error
-		notifyTasksFromWorkflowSnapshotFn     func(*persistence.WorkflowSnapshot, events.PersistedBlobs, bool)
-		notifyTasksFromWorkflowMutationFn     func(*persistence.WorkflowMutation, events.PersistedBlobs, bool)
+		notifyTasksFromWorkflowSnapshotFn     func(*persistence.WorkflowSnapshot, events.PersistedBlobs, error)
+		notifyTasksFromWorkflowMutationFn     func(*persistence.WorkflowMutation, events.PersistedBlobs, error)
 		emitSessionUpdateStatsFn              func(string, *persistence.MutableStateUpdateSessionStats)
 		emitWorkflowHistoryStatsFn            func(string, int, int)
 		emitWorkflowCompletionStatsFn         func(string, string, string, string, string, *types.HistoryEvent)
@@ -243,10 +243,10 @@ func NewContext(
 		updateWorkflowExecutionFn: func(ctx context.Context, request *persistence.UpdateWorkflowExecutionRequest) (*persistence.UpdateWorkflowExecutionResponse, error) {
 			return updateWorkflowExecutionWithRetry(ctx, shard, logger.Helper(), common.CreatePersistenceRetryPolicy(), request)
 		},
-		notifyTasksFromWorkflowSnapshotFn: func(snapshot *persistence.WorkflowSnapshot, blobs events.PersistedBlobs, persistentError bool) {
+		notifyTasksFromWorkflowSnapshotFn: func(snapshot *persistence.WorkflowSnapshot, blobs events.PersistedBlobs, persistentError error) {
 			notifyTasksFromWorkflowSnapshot(shard.GetEngine(), snapshot, blobs, persistentError)
 		},
-		notifyTasksFromWorkflowMutationFn: func(snapshot *persistence.WorkflowMutation, blobs events.PersistedBlobs, persistentError bool) {
+		notifyTasksFromWorkflowMutationFn: func(snapshot *persistence.WorkflowMutation, blobs events.PersistedBlobs, persistentError error) {
 			notifyTasksFromWorkflowMutation(shard.GetEngine(), snapshot, blobs, persistentError)
 		},
 		emitSessionUpdateStatsFn: func(domainName string, stats *persistence.MutableStateUpdateSessionStats) {
@@ -477,12 +477,12 @@ func (c *contextImpl) CreateWorkflowExecution(
 	resp, err := c.createWorkflowExecutionFn(ctx, createRequest)
 	if err != nil {
 		if isOperationPossiblySuccessfulError(err) {
-			c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, events.PersistedBlobs{persistedHistory}, true)
+			c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, events.PersistedBlobs{persistedHistory}, err)
 		}
 		return err
 	}
 
-	c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, events.PersistedBlobs{persistedHistory}, false)
+	c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, events.PersistedBlobs{persistedHistory}, nil)
 
 	// finally emit session stats
 	c.emitSessionUpdateStatsFn(domain, resp.MutableStateUpdateSessionStats)
@@ -617,9 +617,9 @@ func (c *contextImpl) ConflictResolveWorkflowExecution(
 	})
 	if err != nil {
 		if isOperationPossiblySuccessfulError(err) {
-			c.notifyTasksFromWorkflowSnapshotFn(resetWorkflow, persistedBlobs, true)
-			c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, true)
-			c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, true)
+			c.notifyTasksFromWorkflowSnapshotFn(resetWorkflow, persistedBlobs, err)
+			c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, err)
+			c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, err)
 		}
 		return err
 	}
@@ -637,9 +637,9 @@ func (c *contextImpl) ConflictResolveWorkflowExecution(
 		resetMutableState.GetVersionHistories().Duplicate(),
 	))
 
-	c.notifyTasksFromWorkflowSnapshotFn(resetWorkflow, persistedBlobs, false)
-	c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, false)
-	c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, false)
+	c.notifyTasksFromWorkflowSnapshotFn(resetWorkflow, persistedBlobs, nil)
+	c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, nil)
+	c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, nil)
 
 	// finally emit session stats
 	c.emitWorkflowHistoryStatsFn(domain, int(c.stats.HistorySize), int(resetMutableState.GetNextEventID()-1))
@@ -750,12 +750,12 @@ func (c *contextImpl) UpdateWorkflowExecutionTasks(
 	})
 	if err != nil {
 		if isOperationPossiblySuccessfulError(err) {
-			c.notifyTasksFromWorkflowMutationFn(currentWorkflow, nil, true)
+			c.notifyTasksFromWorkflowMutationFn(currentWorkflow, nil, err)
 		}
 		return err
 	}
 	// notify current workflow tasks
-	c.notifyTasksFromWorkflowMutationFn(currentWorkflow, nil, false)
+	c.notifyTasksFromWorkflowMutationFn(currentWorkflow, nil, nil)
 	c.emitSessionUpdateStatsFn(domainName, resp.MutableStateUpdateSessionStats)
 	return nil
 }
@@ -884,8 +884,8 @@ func (c *contextImpl) UpdateWorkflowExecutionWithNew(
 	})
 	if err != nil {
 		if isOperationPossiblySuccessfulError(err) {
-			c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, true)
-			c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, true)
+			c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, err)
+			c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, err)
 		}
 		return err
 	}
@@ -904,9 +904,9 @@ func (c *contextImpl) UpdateWorkflowExecutionWithNew(
 	))
 
 	// notify current workflow tasks
-	c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, false)
+	c.notifyTasksFromWorkflowMutationFn(currentWorkflow, persistedBlobs, nil)
 	// notify new workflow tasks
-	c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, false)
+	c.notifyTasksFromWorkflowSnapshotFn(newWorkflow, persistedBlobs, nil)
 
 	// finally emit session stats
 	c.emitWorkflowHistoryStatsFn(domain, int(c.stats.HistorySize), int(c.mutableState.GetNextEventID()-1))
@@ -928,7 +928,7 @@ func notifyTasksFromWorkflowSnapshot(
 	engine engine.Engine,
 	workflowSnapShot *persistence.WorkflowSnapshot,
 	history events.PersistedBlobs,
-	persistenceError bool,
+	persistenceError error,
 ) {
 	if workflowSnapShot == nil {
 		return
@@ -949,7 +949,7 @@ func notifyTasksFromWorkflowMutation(
 	engine engine.Engine,
 	workflowMutation *persistence.WorkflowMutation,
 	history events.PersistedBlobs,
-	persistenceError bool,
+	persistenceError error,
 ) {
 	if workflowMutation == nil {
 		return
@@ -981,7 +981,7 @@ func notifyTasks(
 	activities []*persistence.ActivityInfo,
 	tasksByCategory map[persistence.HistoryTaskCategory][]persistence.Task,
 	history events.PersistedBlobs,
-	persistenceError bool,
+	persistenceError error,
 ) {
 	transferTaskInfo := &hcommon.NotifyTaskInfo{
 		ExecutionInfo:    executionInfo,
@@ -992,6 +992,7 @@ func notifyTasks(
 		ExecutionInfo:    executionInfo,
 		Tasks:            tasksByCategory[persistence.HistoryTaskCategoryTimer],
 		PersistenceError: persistenceError,
+		ScheduleInMemory: true,
 	}
 	replicationTaskInfo := &hcommon.NotifyTaskInfo{
 		ExecutionInfo:    executionInfo,

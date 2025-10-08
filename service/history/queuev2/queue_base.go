@@ -274,6 +274,10 @@ func (q *queueBase) processNewTasks() bool {
 	return true
 }
 
+func (q *queueBase) processSingleTask(task task.Task) {
+	q.virtualQueueManager.AddSingleTaskToRootQueue(task)
+}
+
 func (q *queueBase) updateQueueState(ctx context.Context) {
 	q.metricsScope.IncCounter(metrics.AckLevelUpdateCounter)
 	queueState := &QueueState{
